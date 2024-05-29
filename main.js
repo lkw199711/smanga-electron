@@ -1,8 +1,8 @@
 /*
  * @Author: lkw199711 lkw199711@163.com
  * @Date: 2024-04-21 18:08:13
- * @LastEditors: lkw199711 lkw199711@163.com
- * @LastEditTime: 2024-04-23 23:51:20
+ * @LastEditors: 梁楷文 lkw199711@163.com
+ * @LastEditTime: 2024-05-29 20:58:32
  * @FilePath: \electron-demo\main.js
  * @Description: 这是主文件 electron 主进程
  */
@@ -56,7 +56,7 @@ const createWindow = () => {
 	const appEx = express();
 
 	// 设置静态文件目录
-	appEx.use(express.static(path.join(__dirname, "smanga", "dist", "baota")));
+	appEx.use(express.static(path.join(__dirname, "smanga")));
 
 	// 启动 Express 服务并监听端口
 	server = appEx.listen(9797, () => {
@@ -95,7 +95,8 @@ app.on("window-all-closed", () => {
 
 const { utilityProcess } = require("electron");
 
-const serverPath = path.join(__dirname, "nest.js");
+// const serverPath = path.join(__dirname, "nest.js");
+const serverPath = path.join(__dirname, 'nest-dist', "main.js");
 let serverProcess = null;
 
 function initServerProcess() {
@@ -114,5 +115,5 @@ function initServerProcess() {
 }
 
 function quitServerProcess() {
-	url || serverProcess?.kill();
+	serverProcess?.kill();
 }
