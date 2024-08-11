@@ -92,11 +92,10 @@ app.on("window-all-closed", () => {
 	}
 });
 
-
 const { utilityProcess } = require("electron");
 
 // const serverPath = path.join(__dirname, "nest.js");
-const serverPath = path.join(__dirname, 'nest-dist', "main.js");
+const serverPath = path.join(__dirname, "nest-dist", "bin", "server.js");
 let serverProcess = null;
 
 function initServerProcess() {
