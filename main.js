@@ -2,7 +2,7 @@
  * @Author: lkw199711 lkw199711@163.com
  * @Date: 2024-04-21 18:08:13
  * @LastEditors: lkw199711 lkw199711@163.com
- * @LastEditTime: 2024-11-02 17:59:16
+ * @LastEditTime: 2024-11-02 18:51:25
  * @FilePath: \electron-demo\main.js
  * @Description: 这是主文件 electron 主进程
  */
@@ -92,9 +92,11 @@ function initServerProcess() {
 	serverProcess.on?.("spawn", () => {
 		serverProcess.stdout?.on("data", (data) => {
 			console.log(`serverProcess output: ${data}`);
+			write_log(data)
 		});
 		serverProcess.stderr?.on("data", (data) => {
 			console.error(`serverProcess err: ${data}`);
+			write_log(data, 'error')
 		});
 	});
 }
@@ -165,4 +167,23 @@ function runNpxCommand(command) {
 
 function quitServerProcess() {
 	serverProcess?.kill();
+}
+
+
+function write_log(logMessage, type = 'log') {
+	// 获取当前运行路径作为根目录
+	const rootDir = process.cwd()
+	// 拼接日志文件路径
+	const logFile = path.join(rootDir, 'data', 'logs', 'smanga.log.txt')
+	const errFile = path.join(rootDir, 'data', 'logs', 'smanga.err.txt')
+
+	// 将日志内容同步写入文件，使用 '\n' 换行符
+	try {
+		if (type === 'log') {
+			fs.appendFileSync(logFile, logMessage + '\n')
+		} else {
+			fs.appendFileSync(errFile, logMessage + '\n')
+		}
+	} catch (err) {
+	}
 }
