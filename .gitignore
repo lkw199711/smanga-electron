@@ -3,3 +3,8 @@ node_modules
 /nest-demo
 /nest-dist
 /out
+
+/smanga-webui-build
+/smanga-adonis-build
+/prisma
+/data

@@ -1,15 +1,19 @@
 /*
  * @Author: lkw199711 lkw199711@163.com
  * @Date: 2024-04-21 18:08:13
- * @LastEditors: 梁楷文 lkw199711@163.com
- * @LastEditTime: 2024-05-29 20:58:32
+ * @LastEditors: lkw199711 lkw199711@163.com
+ * @LastEditTime: 2024-11-02 17:59:16
  * @FilePath: \electron-demo\main.js
  * @Description: 这是主文件 electron 主进程
  */
 const { app, BrowserWindow, ipcMain } = require("electron/main");
 const path = require("node:path");
 const express = require("express");
-const { ChildProcess, fork, spawn } = require("child_process");
+const { createProxyMiddleware } = require('http-proxy-middleware');
+const { ChildProcess, fork, spawn, execSync } = require("child_process");
+const { utilityProcess } = require("electron");
+const serverPath = path.join(__dirname, "smanga-adonis-build", "bin", "server.js");
+let serverProcess = null;
 
 const fs = require("fs");
 // import { join, resolve } from "path";
@@ -29,34 +33,19 @@ const createWindow = () => {
 		},
 	});
 
-	// const filePath = `file://${join(
-	// 	__dirname,
-	// 	"smanga",
-	// 	"dist",
-	// 	"baota",
-	// 	"index.html"
-	// )}`;
-
-	// win.webContents.openDevTools();
-
-	// fs.writeFileSync("./a.txt", "Hello Node.js");
-	// win.loadFile("./smanga/dist/baota/index.html");
-
-	// 加载 Nest.js 服务
-	// nestProcess = fork(path.resolve(__dirname, "nest-demo", "dist", "main.js"), [
-	// 	"--subprocess",
-	// ]);
-	// nestProcess = spawn("node", [
-	// 	path.resolve(__dirname, "smanga", "dist", "baota", "main.js"),
-	// 	// path.resolve(__dirname, "nest-demo", "dist", "main.js"),
-	// ]);
 	initServerProcess();
 
 	// 创建 Express 应用程序
 	const appEx = express();
 
+	// 反代后端项目
+	appEx.use("/api", createProxyMiddleware({
+		target: 'http://localhost:9798', // 后端服务地址
+		changeOrigin: true,
+	}));
+
 	// 设置静态文件目录
-	appEx.use(express.static(path.join(__dirname, "smanga")));
+	appEx.use(express.static(path.join(__dirname, "smanga-webui-build")));
 
 	// 启动 Express 服务并监听端口
 	server = appEx.listen(9797, () => {
@@ -92,13 +81,10 @@ app.on("window-all-closed", () => {
 	}
 });
 
-const { utilityProcess } = require("electron");
-
-// const serverPath = path.join(__dirname, "nest.js");
-const serverPath = path.join(__dirname, "nest-dist", "bin", "server.js");
-let serverProcess = null;
-
 function initServerProcess() {
+	// 切换数据库
+	// ckeck_database();
+
 	serverProcess = utilityProcess.fork(serverPath, [], {
 		stdio: "pipe",
 	});
@@ -111,6 +97,70 @@ function initServerProcess() {
 			console.error(`serverProcess err: ${data}`);
 		});
 	});
+}
+
+function ckeck_database() {
+	// 获取当前运行路径作为根目录
+	const rootDir = process.cwd()
+	// 检查并创建配置文件
+	const configFile = './data/config/smanga.json';
+	const rawData = fs.readFileSync(configFile, 'utf-8')
+	const config = JSON.parse(rawData)
+	const { client, deploy, host, port, username, password, database } = config.sql
+
+	// 拼接数据库连接字符串和变量名
+	let dbUrl, varName, schemaPath;
+
+	// 检查并创建数据库文件
+	if (client === 'sqlite') {
+		dbUrl = 'file:./data/db.sqlite';
+		varName = 'DB_URL_SQLITE';
+		schemaPath = path.join(rootDir, 'prisma', 'sqlite', 'schema.prisma')
+	} else if (client === 'mysql') {
+		dbUrl = `mysql://${username}:${password}@${host}:${port}/${database}`;
+		varName = 'DB_URL_MYSQL';
+		schemaPath = path.join(rootDir, 'prisma', 'mysql', 'schema.prisma')
+	} else if (client === 'postgresql' || client === 'pgsql') {
+		dbUrl = `postgresql://${username}:${password}@${host}:${port}/${database}`;
+		varName = 'DB_URL_POSTGRESQL';
+		const schemaPath = path.join(rootDir, 'prisma', 'pgsql', 'schema.prisma')
+	} else {
+		// 报错 数据库不支持
+		console.error(`Unsupported database client: ${client}`);
+		process.exit(1);
+	}
+
+	runNpxCommand('npx prisma generate --schema=' + schemaPath)
+	runNpxCommand('npx prisma migrate deploy --schema=' + schemaPath)
+
+	const ENV_FILE = path.join(rootDir, '.env');
+
+	// 更新 .env 文件中的对应变量
+	let envContent = fs.readFileSync(ENV_FILE, 'utf8');
+	const regex = new RegExp(`^${varName}=.*`, 'm');
+
+	if (regex.test(envContent)) {
+		// 如果存在，则替换
+		envContent = envContent.replace(regex, `${varName}=${dbUrl}`);
+	} else {
+		// 如果不存在，则添加
+		envContent += `\n${varName}=${dbUrl}`;
+	}
+
+	// 写回 .env 文件
+	fs.writeFileSync(ENV_FILE, envContent, 'utf8');
+}
+
+function runNpxCommand(command) {
+	try {
+		// 执行 npx 命令，并捕获输出
+		execSync(command, { stdio: 'inherit' })
+		console.log('命令执行成功')
+		return true
+	} catch (error) {
+		console.error('命令执行失败:', error.message)
+		return false
+	}
 }
 
 function quitServerProcess() {

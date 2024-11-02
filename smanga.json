@@ -5,7 +5,8 @@
     "port": 3306,
     "username": "smanga",
     "password": "smanga",
-    "database": "smanga2"
+    "database": "smanga2",
+    "deploy": true
   },
   "imagick": {
     "memory": "1gb",

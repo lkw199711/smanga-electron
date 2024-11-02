@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.0",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "http-proxy-middleware": "^3.0.3"
   }
 }
