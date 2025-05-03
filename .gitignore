@@ -8,3 +8,4 @@ node_modules
 /smanga-adonis-build
 /prisma
 /data
+/redis

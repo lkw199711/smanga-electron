@@ -18,7 +18,7 @@ let serverProcess = null;
 const fs = require("fs");
 // import { join, resolve } from "path";
 let mainWindow;
-let nestProcess;
+let nestProcess, redisProcess;
 let server;
 const createWindow = () => {
 	mainWindow = new BrowserWindow({
@@ -65,6 +65,11 @@ app.whenReady().then(() => {
 	ipcMain.handle("ping", () => "pong");
 	createWindow();
 
+	const redisPath = 'redis/redis-server.exe';
+	redisProcess = spawn(redisPath, ['--port', '6379']);
+	redisProcess.stdout.on('data', (data) => console.log(`Redis输出: ${data}`));
+	redisProcess.stderr.on('data', (data) => console.error(`Redis错误: ${data}`));
+
 	app.on("activate", () => {
 		if (BrowserWindow.getAllWindows().length === 0) {
 			createWindow();
@@ -73,6 +78,7 @@ app.whenReady().then(() => {
 });
 
 app.on("window-all-closed", () => {
+	if (redisProcess) redisProcess.kill();
 	if (process.platform !== "darwin") {
 		server.close();
 		// nestProcess.kill();
