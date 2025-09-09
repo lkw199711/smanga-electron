@@ -49,7 +49,7 @@ const createWindow = () => {
 	appEx.use(express.static(staticPath));
 
 	// 3. 处理所有其他路由
-	app.get('*', (req, res) => {
+	appEx.get('*', (req, res) => {
 		res.sendFile(path.join(staticPath, 'index.html'));
 	});
 
