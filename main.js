@@ -45,7 +45,13 @@ const createWindow = () => {
 	}));
 
 	// 设置静态文件目录
-	appEx.use(express.static(path.join(__dirname, "smanga-webui-build")));
+	const staticPath = path.join(__dirname, "smanga-webui-build");
+	appEx.use(express.static(staticPath));
+
+	// 3. 处理所有其他路由
+	app.get('*', (req, res) => {
+		res.sendFile(path.join(staticPath, 'index.html'));
+	});
 
 	// 启动 Express 服务并监听端口
 	server = appEx.listen(9797, () => {
@@ -53,7 +59,7 @@ const createWindow = () => {
 	});
 
 	// 在 Electron 窗口中加载 Express 服务提供的页面
-	mainWindow.loadURL("http://localhost:9797/index.html");
+	mainWindow.loadURL("http://localhost:9797");
 
 	// 关闭窗口时关闭 Express 服务
 	mainWindow.on("closed", () => {
